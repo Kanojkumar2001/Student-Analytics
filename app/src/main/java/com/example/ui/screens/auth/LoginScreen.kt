@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -31,8 +32,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -82,7 +85,9 @@ fun LoginScreen(
         DemoAccount("Student (Rahul)", "rahul.kumar@college.edu", UserRole.STUDENT, "👨‍🎓"),
         DemoAccount("Top Student (Priya)", "priya.sharma@college.edu", UserRole.STUDENT, "🌟"),
         DemoAccount("Faculty (Prof. Kumar)", "prof.kumar@college.edu", UserRole.FACULTY, "👨‍🏫"),
+        DemoAccount("Staff Member", "staff.member@college.edu", UserRole.STAFF, "🧑‍💼"),
         DemoAccount("HOD (Dr. Raman)", "hod.raman@college.edu", UserRole.HOD, "🏢"),
+        DemoAccount("Principal (Dr. Rao)", "principal.rao@college.edu", UserRole.PRINCIPAL, "🎓"),
         DemoAccount("Admin", "admin@college.edu", UserRole.ADMIN, "👑")
     )
 
@@ -271,7 +276,74 @@ fun LoginScreen(
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                     } else {
-                        Text(text = "Sign In with Firebase", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "Sign In", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // OR Divider
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = SurfaceCardBorder)
+                    Text(
+                        text = "  OR sign in with  ",
+                        fontSize = 11.sp,
+                        color = Slate400,
+                        fontWeight = FontWeight.Medium
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = SurfaceCardBorder)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Social Sign-In Buttons Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Google Sign-In Button
+                    OutlinedButton(
+                        onClick = { /* Google sign-in integration */ },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("btn_google_signin"),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceCardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Slate850)
+                    ) {
+                        GoogleIcon(modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Google",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
+
+                    // Facebook Sign-In Button
+                    OutlinedButton(
+                        onClick = { /* Facebook sign-in integration */ },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("btn_facebook_signin"),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1877F2).copy(alpha = 0.5f)),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFF1877F2).copy(alpha = 0.12f))
+                    ) {
+                        FacebookIcon(modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Facebook",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1877F2)
+                        )
                     }
                 }
             }

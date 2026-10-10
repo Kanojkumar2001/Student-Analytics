@@ -22,11 +22,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -55,12 +58,17 @@ import com.example.model.UserRole
 import com.example.ui.auth.AuthViewModel
 import com.example.ui.screens.AdminDashboardScreen
 import com.example.ui.screens.AiAssistantScreen
+import com.example.ui.screens.AtRiskStudentsScreen
+import com.example.ui.screens.AttendanceManagementScreen
 import com.example.ui.screens.CreateInterventionDialog
 import com.example.ui.screens.DataImportDialog
 import com.example.ui.screens.FacultyDashboardScreen
 import com.example.ui.screens.InterventionsScreen
 import com.example.ui.screens.NotificationsScreen
+import com.example.ui.screens.StaffProfileScreen
+import com.example.ui.screens.StudentAttendanceScreen
 import com.example.ui.screens.StudentDashboardScreen
+import com.example.ui.screens.StudentPerformanceScreen
 import com.example.ui.screens.StudentProfileScreen
 import com.example.ui.screens.StudyPlanScreen
 import com.example.ui.screens.auth.ForgotPasswordDialog
@@ -76,9 +84,12 @@ import com.example.ui.theme.SurfaceCard
 
 enum class NavDestination(val label: String, val icon: ImageVector) {
     DASHBOARD("Dashboard", Icons.Default.Dashboard),
-    AI_ASSISTANT("AI Assistant", Icons.Default.AutoAwesome),
+    PERFORMANCE("Academics", Icons.Default.BarChart),
+    ATTENDANCE("Attendance", Icons.Default.DateRange),
+    AT_RISK("At-Risk", Icons.Default.Warning),
     INTERVENTIONS("Interventions", Icons.Default.Handshake),
     STUDY_PLAN("Study Plan", Icons.Default.CalendarMonth),
+    AI_ASSISTANT("AI Advisor", Icons.Default.AutoAwesome),
     PROFILE("Profile", Icons.Default.Person),
     NOTIFICATIONS("Alerts", Icons.Default.Notifications)
 }
@@ -180,6 +191,7 @@ fun EduPulseApp(
             bottomBar = {
                 ModernBottomNavBar(
                     currentNav = currentNav,
+                    currentRole = currentRole,
                     onSelectNav = { currentNav = it },
                     unreadNotifications = unreadNotifications
                 )
@@ -194,7 +206,7 @@ fun EduPulseApp(
                 when (currentNav) {
                     NavDestination.DASHBOARD -> {
                         when (currentRole) {
-                            UserRole.STUDENT -> {
+                            UserRole.STUDENT, UserRole.MENTOR -> {
                                 StudentDashboardScreen(
                                     student = currentStudent,
                                     subjects = grades,
@@ -204,7 +216,7 @@ fun EduPulseApp(
                                     onNavigateToProfile = { currentNav = NavDestination.PROFILE }
                                 )
                             }
-                            UserRole.FACULTY -> {
+                            UserRole.FACULTY, UserRole.STAFF -> {
                                 FacultyDashboardScreen(
                                     students = allStudents,
                                     onUpdateMarks = { roll, code, internal, assign, lab ->
@@ -219,13 +231,53 @@ fun EduPulseApp(
                                     }
                                 )
                             }
-                            UserRole.HOD, UserRole.ADMIN -> {
+                            UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN -> {
                                 AdminDashboardScreen(
                                     students = allStudents,
-                                    onOpenImportDialog = { showImportDialog = true }
+                                    currentRole = currentRole,
+                                    onOpenImportDialog = { showImportDialog = true },
+                                    onRoleChange = { newRole -> authViewModel.switchRole(newRole) },
+                                    onNavigateToAtRisk = { currentNav = NavDestination.AT_RISK }
                                 )
                             }
                         }
+                    }
+
+                    NavDestination.PERFORMANCE -> {
+                        StudentPerformanceScreen(
+                            student = currentStudent,
+                            subjects = grades
+                        )
+                    }
+
+                    NavDestination.ATTENDANCE -> {
+                        if (currentRole == UserRole.STUDENT || currentRole == UserRole.MENTOR) {
+                            StudentAttendanceScreen(
+                                student = currentStudent,
+                                subjects = grades
+                            )
+                        } else {
+                            AttendanceManagementScreen(
+                                students = allStudents,
+                                onRecordAttendance = { roll, code, attended, total ->
+                                    viewModel.recordStudentAttendance(roll, code, attended, total)
+                                }
+                            )
+                        }
+                    }
+
+                    NavDestination.AT_RISK -> {
+                        AtRiskStudentsScreen(
+                            students = allStudents,
+                            onSelectStudent = { roll ->
+                                viewModel.selectStudent(roll)
+                                currentNav = NavDestination.PROFILE
+                            },
+                            onCreateInterventionForStudent = { student ->
+                                viewModel.selectStudent(student.rollNumber)
+                                showCreateInterventionDialog = true
+                            }
+                        )
                     }
 
                     NavDestination.AI_ASSISTANT -> {
@@ -254,15 +306,25 @@ fun EduPulseApp(
                     }
 
                     NavDestination.PROFILE -> {
-                        StudentProfileScreen(
-                            student = currentStudent,
-                            subjects = grades,
-                            badges = badges,
-                            onLogout = {
-                                authViewModel.logout()
-                                viewModel.logout()
-                            }
-                        )
+                        if (currentRole == UserRole.STUDENT) {
+                            StudentProfileScreen(
+                                student = currentStudent,
+                                subjects = grades,
+                                badges = badges,
+                                onLogout = {
+                                    authViewModel.logout()
+                                    viewModel.logout()
+                                }
+                            )
+                        } else {
+                            StaffProfileScreen(
+                                currentUser = currentUser!!,
+                                onLogout = {
+                                    authViewModel.logout()
+                                    viewModel.logout()
+                                }
+                            )
+                        }
                     }
 
                     NavDestination.NOTIFICATIONS -> {
@@ -399,16 +461,33 @@ private fun TopAppBarHeader(
 @Composable
 private fun ModernBottomNavBar(
     currentNav: NavDestination,
+    currentRole: UserRole,
     onSelectNav: (NavDestination) -> Unit,
     unreadNotifications: Int
 ) {
-    val items = listOf(
-        NavDestination.DASHBOARD,
-        NavDestination.AI_ASSISTANT,
-        NavDestination.INTERVENTIONS,
-        NavDestination.STUDY_PLAN,
-        NavDestination.PROFILE
-    )
+    val items = when (currentRole) {
+        UserRole.STUDENT, UserRole.MENTOR -> listOf(
+            NavDestination.DASHBOARD,
+            NavDestination.PERFORMANCE,
+            NavDestination.ATTENDANCE,
+            NavDestination.STUDY_PLAN,
+            NavDestination.PROFILE
+        )
+        UserRole.FACULTY, UserRole.STAFF -> listOf(
+            NavDestination.DASHBOARD,
+            NavDestination.ATTENDANCE,
+            NavDestination.AT_RISK,
+            NavDestination.INTERVENTIONS,
+            NavDestination.PROFILE
+        )
+        UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN -> listOf(
+            NavDestination.DASHBOARD,
+            NavDestination.AT_RISK,
+            NavDestination.INTERVENTIONS,
+            NavDestination.AI_ASSISTANT,
+            NavDestination.PROFILE
+        )
+    }
 
     NavigationBar(
         modifier = Modifier

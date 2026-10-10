@@ -1,5 +1,6 @@
 package com.example.ui.screens.auth
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,8 +31,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -41,7 +45,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -333,6 +342,73 @@ fun SignupScreen(
                         Text(text = "Create Account", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // OR Divider
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = SurfaceCardBorder)
+                    Text(
+                        text = "  OR sign up with  ",
+                        fontSize = 11.sp,
+                        color = Slate400,
+                        fontWeight = FontWeight.Medium
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = SurfaceCardBorder)
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Social Sign-In Buttons Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Google Sign-In Button
+                    OutlinedButton(
+                        onClick = { /* Google sign-in integration */ },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("btn_google_signup"),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceCardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Slate850)
+                    ) {
+                        GoogleIcon(modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Google",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
+
+                    // Facebook Sign-In Button
+                    OutlinedButton(
+                        onClick = { /* Facebook sign-in integration */ },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("btn_facebook_signup"),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1877F2).copy(alpha = 0.5f)),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFF1877F2).copy(alpha = 0.12f))
+                    ) {
+                        FacebookIcon(modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Facebook",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1877F2)
+                        )
+                    }
+                }
             }
         }
 
@@ -353,5 +429,119 @@ fun SignupScreen(
                     .testTag("btn_switch_to_login")
             )
         }
+    }
+}
+
+/**
+ * Google multicolor "G" icon drawn with Canvas.
+ */
+@Composable
+fun GoogleIcon(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val cx = w / 2f
+        val cy = h / 2f
+        val r = minOf(w, h) / 2f
+        val strokeW = r * 0.18f
+
+        // Red arc (top-right)
+        val redPath = Path().apply {
+            arcTo(
+                rect = Rect(Offset(cx - r, cy - r), Size(r * 2, r * 2)),
+                startAngleDegrees = -30f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = true
+            )
+        }
+        drawPath(redPath, color = Color(0xFFEA4335), style = Stroke(width = strokeW))
+
+        // Yellow arc (bottom-right)
+        val yellowPath = Path().apply {
+            arcTo(
+                rect = Rect(Offset(cx - r, cy - r), Size(r * 2, r * 2)),
+                startAngleDegrees = 60f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = true
+            )
+        }
+        drawPath(yellowPath, color = Color(0xFFFBBC05), style = Stroke(width = strokeW))
+
+        // Green arc (bottom-left)
+        val greenPath = Path().apply {
+            arcTo(
+                rect = Rect(Offset(cx - r, cy - r), Size(r * 2, r * 2)),
+                startAngleDegrees = 150f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = true
+            )
+        }
+        drawPath(greenPath, color = Color(0xFF34A853), style = Stroke(width = strokeW))
+
+        // Blue arc (top-left)
+        val bluePath = Path().apply {
+            arcTo(
+                rect = Rect(Offset(cx - r, cy - r), Size(r * 2, r * 2)),
+                startAngleDegrees = 240f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = true
+            )
+        }
+        drawPath(bluePath, color = Color(0xFF4285F4), style = Stroke(width = strokeW))
+
+        // Blue horizontal bar of the "G"
+        drawLine(
+            color = Color(0xFF4285F4),
+            start = Offset(cx, cy),
+            end = Offset(cx + r * 0.82f, cy),
+            strokeWidth = strokeW
+        )
+    }
+}
+
+/**
+ * Facebook "f" icon drawn with Canvas.
+ */
+@Composable
+fun FacebookIcon(modifier: Modifier = Modifier) {
+    val facebookBlue = Color(0xFF1877F2)
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val cx = w / 2f
+        val cy = h / 2f
+        val r = minOf(w, h) / 2f
+
+        // Circle background
+        drawCircle(color = facebookBlue, radius = r, center = Offset(cx, cy))
+
+        // "f" letter
+        val strokeW = r * 0.22f
+        val fTop = cy - r * 0.55f
+        val fBottom = cy + r * 0.65f
+        val fLeft = cx - r * 0.08f
+        val fRight = cx + r * 0.42f
+        val fCross = cy - r * 0.1f
+
+        // Vertical stem
+        drawLine(
+            color = Color.White,
+            start = Offset(cx + r * 0.08f, fTop + r * 0.2f),
+            end = Offset(cx + r * 0.08f, fBottom),
+            strokeWidth = strokeW
+        )
+        // Top curve of f
+        val curvePath = Path().apply {
+            moveTo(cx - r * 0.08f, fTop + r * 0.35f)
+            quadraticTo(cx + r * 0.08f, fTop, fRight - r * 0.1f, fTop + r * 0.2f)
+        }
+        drawPath(curvePath, color = Color.White, style = Stroke(width = strokeW))
+        // Crossbar
+        drawLine(
+            color = Color.White,
+            start = Offset(fLeft, fCross),
+            end = Offset(fRight - r * 0.05f, fCross),
+            strokeWidth = strokeW
+        )
     }
 }

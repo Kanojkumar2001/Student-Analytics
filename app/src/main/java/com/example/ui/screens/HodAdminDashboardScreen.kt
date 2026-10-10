@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,14 +52,64 @@ import com.example.ui.theme.SurfaceCardBorder
 fun HodAdminDashboardScreen(
     students: List<StudentEntity>,
     onOpenImportDialog: () -> Unit,
+    onNavigateToAtRisk: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val deptStats = listOf(
-        DepartmentStats("Computer Science (CSE)", 240, 7.8, 84.0, 91.0, 14, 18),
-        DepartmentStats("Electronics & Comm (ECE)", 160, 7.2, 79.0, 85.0, 12, 22),
-        DepartmentStats("Electrical (EEE)", 120, 7.1, 77.0, 82.0, 10, 16),
-        DepartmentStats("Mechanical (MECH)", 122, 6.9, 74.0, 79.0, 12, 17)
-    )
+    val totalStudents = students.size
+    val averageGpa = if (totalStudents > 0) {
+        String.format(java.util.Locale.US, "%.2f", students.map { it.currentGpa }.average())
+    } else "7.42"
+
+    val averageAttendance = if (totalStudents > 0) {
+        students.map { it.attendance }.average().toInt()
+    } else 81
+
+    val passStudentsCount = students.count { it.backlogs == 0 }
+    val passPercentage = if (totalStudents > 0) {
+        (passStudentsCount * 100) / totalStudents
+    } else 87
+
+    val highRiskCount = students.count { it.riskLevel == "HIGH" || it.riskScore >= 65 }
+    val mediumRiskCount = students.count { it.riskLevel == "MEDIUM" || (it.riskScore in 45..64) }
+
+    val depts = listOf("CSE", "ECE", "EEE", "MECH")
+    val deptStats = androidx.compose.runtime.remember(students) {
+        if (students.isEmpty()) {
+            listOf(
+                DepartmentStats("Computer Science (CSE)", 240, 7.8, 84.0, 91.0, 14, 18),
+                DepartmentStats("Electronics & Comm (ECE)", 160, 7.2, 79.0, 85.0, 12, 22),
+                DepartmentStats("Electrical (EEE)", 120, 7.1, 77.0, 82.0, 10, 16),
+                DepartmentStats("Mechanical (MECH)", 122, 6.9, 74.0, 79.0, 12, 17)
+            )
+        } else {
+            depts.map { deptName ->
+                val deptStudents = students.filter { it.department.equals(deptName, ignoreCase = true) }
+                val count = deptStudents.size
+                val avgG = if (count > 0) deptStudents.map { it.currentGpa }.average() else 7.2
+                val avgA = if (count > 0) deptStudents.map { it.attendance }.average() else 78.0
+                val highR = deptStudents.count { it.riskLevel == "HIGH" || it.riskScore >= 65 }
+                val backlogs = deptStudents.sumOf { it.backlogs }
+                val passRate = if (count > 0) {
+                    ((count - deptStudents.count { it.backlogs > 0 }) * 100.0) / count
+                } else 85.0
+
+                DepartmentStats(
+                    department = when (deptName) {
+                        "CSE" -> "Computer Science (CSE)"
+                        "ECE" -> "Electronics & Comm (ECE)"
+                        "EEE" -> "Electrical (EEE)"
+                        else -> "Mechanical (MECH)"
+                    },
+                    totalStudents = if (count > 0) count else 120,
+                    averageGpa = String.format(java.util.Locale.US, "%.2f", avgG).toDoubleOrNull() ?: 7.2,
+                    averageAttendance = avgA,
+                    passPercentage = passRate,
+                    highRiskCount = highR,
+                    backlogsCount = backlogs
+                )
+            }
+        }
+    }
 
     LazyColumn(
         modifier = modifier
@@ -140,7 +191,7 @@ fun HodAdminDashboardScreen(
             ) {
                 MetricKpiCard(
                     title = "Total Enrolled",
-                    value = "642",
+                    value = "$totalStudents",
                     iconEmoji = "🏛️",
                     accentColor = IndigoAccent,
                     trendText = "4 Branches",
@@ -151,7 +202,7 @@ fun HodAdminDashboardScreen(
 
                 MetricKpiCard(
                     title = "Average GPA",
-                    value = "7.42",
+                    value = averageGpa,
                     iconEmoji = "📈",
                     accentColor = CyanGlow,
                     trendText = "+0.3 YOY",
@@ -169,31 +220,37 @@ fun HodAdminDashboardScreen(
             ) {
                 MetricKpiCard(
                     title = "Avg Attendance",
-                    value = "81%",
+                    value = "$averageAttendance%",
                     iconEmoji = "⏰",
                     accentColor = EmeraldSuccess,
-                    trendText = "Healthy",
-                    isPositiveTrend = true,
+                    trendText = if (averageAttendance >= 75) "Healthy" else "Below 75%",
+                    isPositiveTrend = averageAttendance >= 75,
                     subtitle = "Cutoff 75%",
                     modifier = Modifier.weight(1f)
                 )
 
                 MetricKpiCard(
                     title = "Pass Percentage",
-                    value = "87%",
+                    value = "$passPercentage%",
                     iconEmoji = "🎓",
                     accentColor = AmberWarning,
-                    trendText = "+2.4%",
+                    trendText = "$highRiskCount High Risk",
                     isPositiveTrend = true,
                     subtitle = "Across all depts",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .then(
+                            if (onNavigateToAtRisk != null) {
+                                Modifier.clickable { onNavigateToAtRisk() }
+                            } else Modifier
+                        )
                 )
             }
         }
 
         // Institutional Risk Distribution Chart
         item {
-            RiskDistributionCard(students = students)
+            RiskDistributionCard(students = students, onNavigateToAtRisk = onNavigateToAtRisk)
         }
 
         // Department Comparison Matrix (Requirement #21)
@@ -213,33 +270,82 @@ fun HodAdminDashboardScreen(
 }
 
 @Composable
-private fun RiskDistributionCard(students: List<StudentEntity>) {
+private fun RiskDistributionCard(
+    students: List<StudentEntity>,
+    onNavigateToAtRisk: (() -> Unit)? = null
+) {
+    val total = students.size.coerceAtLeast(1)
+    val highRiskCount = students.count { it.riskLevel == "HIGH" || it.riskScore >= 65 }
+    val mediumRiskCount = students.count { it.riskLevel == "MEDIUM" || (it.riskScore in 45..64) }
+    val lowRiskCount = students.count { it.riskLevel == "LOW" || it.riskScore < 45 }
+
+    val lowRatio = (lowRiskCount.toFloat() / total).coerceIn(0f, 1f)
+    val medRatio = (mediumRiskCount.toFloat() / total).coerceIn(0f, 1f)
+    val highRatio = (highRiskCount.toFloat() / total).coerceIn(0f, 1f)
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onNavigateToAtRisk != null) {
+                    Modifier.clickable { onNavigateToAtRisk() }
+                } else Modifier
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceCard),
         border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SurfaceCardBorder))
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            Text(
-                text = "Student Risk Distribution (Institutional)",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                text = "Early Warning System Classification Breakdown",
-                fontSize = 11.sp,
-                color = Slate400
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Student Risk Distribution (Institutional)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Early Warning System Classification Breakdown",
+                        fontSize = 11.sp,
+                        color = Slate400
+                    )
+                }
+                if (onNavigateToAtRisk != null) {
+                    Text(
+                        text = "View All →",
+                        fontSize = 11.sp,
+                        color = CyanGlow,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            DistributionRow("Low Risk (0 - 30%) 🟢", "398 Students (62%)", 0.62f, EmeraldSuccess)
+            DistributionRow(
+                "Low Risk (0 - 30%) 🟢",
+                "$lowRiskCount Students (${(lowRatio * 100).toInt()}%)",
+                lowRatio,
+                EmeraldSuccess
+            )
             Spacer(modifier = Modifier.height(10.dp))
-            DistributionRow("Medium Risk (31 - 60%) 🟡", "196 Students (30%)", 0.30f, AmberWarning)
+            DistributionRow(
+                "Medium Risk (31 - 60%) 🟡",
+                "$mediumRiskCount Students (${(medRatio * 100).toInt()}%)",
+                medRatio,
+                AmberWarning
+            )
             Spacer(modifier = Modifier.height(10.dp))
-            DistributionRow("High Risk (61 - 100%) 🔴", "48 Students (8%)", 0.08f, RoseRisk)
+            DistributionRow(
+                "High Risk (61 - 100%) 🔴",
+                "$highRiskCount Students (${(highRatio * 100).toInt()}%)",
+                highRatio,
+                RoseRisk
+            )
         }
     }
 }

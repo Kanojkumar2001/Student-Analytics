@@ -2,9 +2,12 @@ package com.example.model
 
 enum class UserRole(val label: String, val iconEmoji: String) {
     STUDENT("Student", "👨‍🎓"),
+    STAFF("Staff / Faculty", "👨‍🏫"),
     FACULTY("Faculty", "👨‍🏫"),
-    HOD("HOD / Dept Admin", "🏢"),
-    ADMIN("Super Admin", "👑")
+    HOD("HOD / Dept Head", "🏢"),
+    PRINCIPAL("Principal", "🎓"),
+    ADMIN("Super Admin", "👑"),
+    MENTOR("Mentor", "🤝")
 }
 
 enum class AcademicRiskLevel(val label: String, val colorHex: Long) {

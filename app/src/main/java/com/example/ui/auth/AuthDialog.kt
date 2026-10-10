@@ -35,6 +35,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,8 +75,8 @@ fun AuthDialog(
     var selectedRole by remember { mutableStateOf(UserRole.STUDENT) }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    val isLoading by remember { authViewModel.isLoading }
-    val errorMessage by remember { authViewModel.errorMessage }
+    val isLoading by authViewModel.isLoading.collectAsState()
+    val errorMessage by authViewModel.authError.collectAsState()
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -216,11 +217,18 @@ fun AuthDialog(
                 Button(
                     onClick = {
                         if (isSignUp) {
-                            authViewModel.signUp(email, password, name, selectedRole) {
+                            authViewModel.signup(
+                                name = name,
+                                email = email,
+                                pass = password,
+                                role = selectedRole,
+                                department = "CSE",
+                                rollNumber = null
+                            ) {
                                 onSuccess()
                             }
                         } else {
-                            authViewModel.login(email, password, selectedRole) {
+                            authViewModel.login(email, password) {
                                 onSuccess()
                             }
                         }

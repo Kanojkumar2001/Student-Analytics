@@ -203,6 +203,15 @@ class AuthViewModel(application: Application) : AndroidViewModel(application), A
         }
     }
 
+    fun switchRole(newRole: UserRole) {
+        _currentUser.value?.let { user ->
+            val updated = user.copy(role = newRole)
+            _currentUser.value = updated
+            _authState.value = AuthState.Authenticated(updated)
+            userRoleProvider.setUser(updated)
+        }
+    }
+
     override fun refreshSession() {
         val user = authService.getPersistedUser()
         _currentUser.value = user

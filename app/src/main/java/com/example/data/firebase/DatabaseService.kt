@@ -76,7 +76,7 @@ class DatabaseService(private val context: Context) {
                                 riskLevel = doc.getString("riskLevel") ?: "LOW",
                                 successScore = (doc.getLong("successScore") ?: 75L).toInt(),
                                 cluster = doc.getString("cluster") ?: "Consistent Performers",
-                                mentorName = doc.getString("mentorName") ?: "Faculty Advisor"
+                                advisorName = doc.getString("advisorName") ?: "Faculty Advisor"
                             )
                         } catch (e: Exception) {
                             null
@@ -167,7 +167,7 @@ class DatabaseService(private val context: Context) {
                 "riskLevel" to student.riskLevel,
                 "successScore" to student.successScore,
                 "cluster" to student.cluster,
-                "mentorName" to student.mentorName,
+                "advisorName" to student.advisorName,
                 "updatedAt" to System.currentTimeMillis()
             )
             db.collection("students").document(student.rollNumber).set(map, SetOptions.merge()).await()

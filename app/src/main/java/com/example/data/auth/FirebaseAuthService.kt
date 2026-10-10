@@ -159,7 +159,9 @@ class FirebaseAuthService(private val context: Context) {
         val uid = prefs.getString("logged_in_uid", null)
         if (uid != null) {
             val email = prefs.getString("logged_in_email", "") ?: ""
-            val name = prefs.getString("logged_in_name", "Student") ?: "Student"
+            val name = prefs.getString("logged_in_name", null)
+                ?: prefs.getString("user_name_$email", null)
+                ?: "User"
             val roleStr = prefs.getString("logged_in_role", UserRole.STUDENT.name) ?: UserRole.STUDENT.name
             val dept = prefs.getString("logged_in_dept", "CSE") ?: "CSE"
             val roll = prefs.getString("logged_in_roll", null)
@@ -231,21 +233,36 @@ class FirebaseAuthService(private val context: Context) {
         val lower = email.lowercase()
         return when {
             lower.contains("faculty") || lower.contains("prof") -> UserRole.FACULTY
+            lower.contains("staff") -> UserRole.STAFF
             lower.contains("hod") -> UserRole.HOD
+            lower.contains("principal") -> UserRole.PRINCIPAL
             lower.contains("admin") -> UserRole.ADMIN
+            lower.contains("mentor") -> UserRole.MENTOR
             else -> UserRole.STUDENT
         }
     }
 
     private fun resolveNameFromEmail(email: String): String {
+        // First check if we have a stored name for this email from signup
+        val storedName = prefs.getString("user_name_$email", null)
+        if (!storedName.isNullOrBlank()) return storedName
+
         val lower = email.lowercase()
         return when {
-            lower.contains("faculty") || lower.contains("kumar") -> "Prof. Ananya Kumar"
+            lower.contains("faculty") -> "Faculty Member"
+            lower.contains("prof") -> "Professor"
             lower.contains("sharma") -> "Dr. S. K. Sharma"
-            lower.contains("hod") || lower.contains("raman") -> "Dr. R. Raman"
-            lower.contains("admin") -> "Dean Academic Affairs"
+            lower.contains("hod") -> "Head of Department"
+            lower.contains("raman") -> "Dr. R. Raman"
+            lower.contains("admin") -> "Administrator"
             lower.contains("priya") -> "Priya Sharma"
-            else -> "Rahul Kumar"
+            else -> {
+                // Use email prefix (before @) as readable name
+                val prefix = email.substringBefore("@").replace(".", " ").replace("_", " ")
+                prefix.split(" ").joinToString(" ") { word ->
+                    word.replaceFirstChar { it.uppercaseChar() }
+                }.ifBlank { "User" }
+            }
         }
     }
 
